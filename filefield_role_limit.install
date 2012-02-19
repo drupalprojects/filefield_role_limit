@@ -14,7 +14,7 @@ function filefield_role_limit_install() {
   drupal_set_message($message);
   $message = st("FileField Role Limit settings are available for FileField fields under !nodetypeslink or !fieldslink.",
     array(
-	  '!nodetypeslink' => l(st('Administer &gt; Content management &gt; Content types'), 'admin/content/types', array('html' => TRUE)),
+      '!nodetypeslink' => l(st('Administer &gt; Content management &gt; Content types'), 'admin/content/types', array('html' => TRUE)),
       '!fieldslink' => l(st('Administer &gt; Content management &gt; Content types &gt; Fields'), 'admin/content/types/fields', array('html' => TRUE))));
   drupal_set_message($message);
 }
@@ -26,8 +26,8 @@ function filefield_role_limit_uninstall() {
   $supported_widgets = array_keys(filefield_role_limit_elements());
   $content_instance_table = content_instance_tablename();
   $sql_args = $supported_widgets;
-  array_unshift($sql_args,$content_instance_table);
-  $db_result = db_query("SELECT * FROM {%s} WHERE widget_type IN (" . db_placeholders($supported_widgets,'varchar') . ")", $sql_args);
+  array_unshift($sql_args,  $content_instance_table);
+  $db_result = db_query("SELECT * FROM {%s} WHERE widget_type IN (" . db_placeholders($supported_widgets,'varchar') . ")",  $sql_args);
   while ($row = db_fetch_object($db_result)) {
     $widget_settings = unserialize($row->widget_settings);
     if (empty($widget_settings) === FALSE && is_array($widget_settings) === TRUE) {

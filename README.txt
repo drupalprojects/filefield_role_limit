@@ -59,5 +59,10 @@ INSTALLATION
 
 AUTHOR
 ------
+
 Alberto Colella
+http://drupal.org/user/460740
+
+Contacs:
+http://drupal.org/user/460740/contact
 kongoji@gmail.com

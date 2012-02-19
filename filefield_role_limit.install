@@ -26,13 +26,13 @@ function filefield_role_limit_uninstall() {
   $supported_widgets = array_keys(filefield_role_limit_elements());
   $content_instance_table = content_instance_tablename();
   $sql_args = $supported_widgets;
-  array_unshift($sql_args,  $content_instance_table);
-  $db_result = db_query("SELECT * FROM {%s} WHERE widget_type IN (" . db_placeholders($supported_widgets,'varchar') . ")",  $sql_args);
+  array_unshift($sql_args, $content_instance_table);
+  $db_result = db_query("SELECT * FROM {%s} WHERE widget_type IN (" . db_placeholders($supported_widgets, 'varchar') . ")", $sql_args);
   while ($row = db_fetch_object($db_result)) {
     $widget_settings = unserialize($row->widget_settings);
     if (empty($widget_settings) === FALSE && is_array($widget_settings) === TRUE) {
       foreach ($widget_settings as $name => $value) {
-        if (in_array(substr($name, 0, 27), array('max_filesize_per_file_role_', 'max_filesize_per_node_role_')) === TRUE) {
+        if (in_array(drupal_substr($name, 0, 27), array('max_filesize_per_file_role_', 'max_filesize_per_node_role_')) === TRUE) {
           unset($widget_settings[$name]);
         }
       }

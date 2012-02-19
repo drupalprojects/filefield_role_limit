@@ -1,13 +1,19 @@
 <?php
+
 /**
-* Implements hook_install().
-*/
+ * @file
+ * Install hooks for FileField Role Limit module.
+ */
+ 
+/**
+ * Implements hook_install().
+ */
 function filefield_role_limit_install() {
-  $message = st("The %name module installed successfully.", 
-    array( '%name' => l('FileField Role Limit', 'http://drupal.org/project/filefield_role_limit', array('absolute' => TRUE))));
-  drupal_set_message($message);  
+  $message = st("The %name module installed successfully.",
+    array('%name' => l(st('FileField Role Limit'), 'http://drupal.org/project/filefield_role_limit', array('absolute' => TRUE))));
+  drupal_set_message($message);
   $message = st("Your Module settings are available for FileField fields under !nodetypeslink or !fieldslink.",
-    array( '!nodetypeslink' => l(st('Administer › Content management › Content types'), 'admin/content/types')),
-    array( '!fieldslink' => l(st('Administer › Content management › Content types > Fields'), 'admin/content/types/fields')));
-  drupal_set_message($message);  
+    array('!nodetypeslink' => l(st('Administer › Content management › Content types'), 'admin/content/types')),
+    array('!fieldslink' => l(st('Administer › Content management › Content types > Fields'), 'admin/content/types/fields')));
+  drupal_set_message($message);
 }

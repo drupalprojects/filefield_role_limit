@@ -131,7 +131,7 @@ function filefield_role_limit_widget_process($element, $edit, &$form_state, $for
  *
  * Each user role could have a different upload size limit,
  * so it will be taken the max upload size limit through all user roles.
- * If use has no limits for its roles, the default field settings will be 
+ * If use has no limits for its roles, the default field settings will be
  * taken.
  *
  * @param array $element

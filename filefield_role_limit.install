@@ -9,6 +9,8 @@
  * Implements hook_install().
  */
 function filefield_role_limit_install() {
+  $weight = db_result(db_query("SELECT weight FROM {system} WHERE type = 'module' AND name = 'filefield'"));
+  db_query("UPDATE {system} SET weight = %d WHERE type = 'module' AND name = 'filefield_role_limit'", $weight + 1);
   $message = st("The %name module installed successfully.",
     array('%name' => st('FileField Role Limit')));
   drupal_set_message($message);

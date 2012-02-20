@@ -80,10 +80,10 @@ function filefield_role_limit_widget_settings_alter(&$settings, $op, $widget) {
 function filefield_role_limit_elements() {
   return array(
     'filefield_widget' => array(
-      '#process' => 'filefield_role_limit_widget_process',
+      '#process' => array('filefield_role_limit_widget_process'),
     ),
     'imagefield_widget' => array(
-      '#process' => 'filefield_role_limit_widget_process',
+      '#process' => array('filefield_role_limit_widget_process'),
     ),
   );
 }
@@ -98,8 +98,13 @@ function filefield_role_limit_form_alter(&$form, &$form_state, $form_id) {
       $fields_name = array_keys($fields);
       foreach ($fields_name as $field_name) {
         if (isset($form['#field_info'][$field_name]['widget']['max_filesize_per_node']) === TRUE) {
-          $max_size = _filefield_role_limit_get_element_max_size($form[$field_name][0], NULL, 'node', TRUE);
-          $form['#field_info'][$field_name]['widget']['max_filesize_per_node'] = $max_size;
+          $max_size_node_raw = _filefield_role_limit_get_element_max_size($form[$field_name][0], NULL, 'node', TRUE);             
+          $form['#field_info'][$field_name]['widget']['max_filesize_per_node'] = $max_size_node_raw;		 
+        }
+        if (isset($form[$field_name][0]['#upload_validators']['filefield_validate_size']) === TRUE) {         
+          $max_size_file_plain = _filefield_role_limit_get_element_max_size($form[$field_name][0], NULL, 'file', FALSE);          
+          $form[$field_name][0]['#upload_validators']['filefield_role_limit_validate_size'] = array($max_size_file_plain);
+		  unset($form[$field_name][0]['#upload_validators']['filefield_validate_size']);
         }
       }
     }
@@ -111,8 +116,8 @@ function filefield_role_limit_form_alter(&$form, &$form_state, $form_id) {
  */
 function filefield_role_limit_widget_process($element, $edit, &$form_state, $form) {
   if (isset($element['#upload_validators']['filefield_validate_size']) === TRUE) {
-    $max_upload_size = _filefield_role_limit_get_element_max_size($element);
-    $element['#upload_validators']['filefield_validate_size'] = array($max_upload_size);
+    $max_upload_size_plain = _filefield_role_limit_get_element_max_size($element);
+    $element['#upload_validators']['filefield_validate_size'] = array($max_upload_size_plain);   
     if (isset($element['upload']) === TRUE) {
       foreach ($element['#upload_validators'] as $callback => $arguments) {
         $help_func = $callback . '_help';
@@ -124,6 +129,14 @@ function filefield_role_limit_widget_process($element, $edit, &$form_state, $for
     }
   }
   return $element;
+}
+
+function filefield_role_limit_validate_size($file, $file_limit = 0, $user_limit = 0) {
+  if ($file_limit && $file->filesize > $file_limit) {
+    $errors[] = t('The file is %filesize exceeding the maximum file size of %maxsize.', array('%filesize' => format_size($file->filesize), '%maxsize' => format_size($file_limit)));
+  }
+
+  return $errors;
 }
 
 /**
@@ -159,14 +172,17 @@ function _filefield_role_limit_get_element_max_size($element, $account = NULL, $
   }
   if (isset($limits[$element['#field_name']]) === FALSE) {
     $limits[$element['#field_name']] = array();
+  } 
+  if (isset($limits[$element['#field_name']][$type]) === FALSE) {
+    $limits[$element['#field_name']][$type] = array();
   }
   $raw_type = 'parsed';
   if ($is_raw === TRUE) {
     $raw_type = 'raw';
   }
-  if (isset($limits[$element['#field_name']][$account->uid][$raw_type]) === TRUE
-    && empty($limits[$element['#field_name']][$account->uid][$raw_type]) === FALSE) {
-    return $limits[$element['#field_name']][$account->uid][$raw_type];
+  if (isset($limits[$element['#field_name']][$type][$account->uid][$raw_type]) === TRUE
+    && empty($limits[$element['#field_name']][$type][$account->uid][$raw_type]) === FALSE) {
+    return $limits[$element['#field_name']][$type][$account->uid][$raw_type];
   }
   $max_upload_size = 0;
   $roles = array();
@@ -179,37 +195,26 @@ function _filefield_role_limit_get_element_max_size($element, $account = NULL, $
       foreach ($roles as $rid) {
         if (isset($widgets['max_filesize_per_' . $type . '_role_' . $rid]) === TRUE
           && empty($widgets['max_filesize_per_' . $type . '_role_' . $rid]) === FALSE
-          && parse_size($widgets['max_filesize_per_' . $type . '_role_' . $rid]) > $max_upload_size) {
-          if ($is_raw === TRUE) {
-            $max_upload_size = $widgets['max_filesize_per_' . $type . '_role_' . $rid];
-          }
-          else {
-            $max_upload_size = parse_size($widgets['max_filesize_per_' . $type . '_role_' . $rid]);
-          }
+          && parse_size($widgets['max_filesize_per_' . $type . '_role_' . $rid]) > $max_upload_size) {         
+          $max_upload_size = $widgets['max_filesize_per_' . $type . '_role_' . $rid];		   
         }
       }
     }
     // Default settings value.
     if ($max_upload_size == 0 && empty($widgets['max_filesize_per_' . $type . '']) === FALSE) {
-      if ($is_raw === TRUE) {
-        $max_upload_size = $widgets['max_filesize_per_' . $type . ''];
-      }
-      else {
-        $max_upload_size = parse_size($widgets['max_filesize_per_' . $type . '']);
-      }
+      $max_upload_size = $widgets['max_filesize_per_' . $type . ''];
     }
     // Default system value.
     if ($max_upload_size == 0) {
-      if ($is_raw === TRUE) {
-        $max_upload_size = file_upload_max_size();
-      }
-      else {
-        $max_upload_size = parse_size(file_upload_max_size());
-      }
+      $max_upload_size = file_upload_max_size();
     }
+  } 
+  $limits[$element['#field_name']][$type][$account->uid]['raw'] = $max_upload_size;
+  $limits[$element['#field_name']][$type][$account->uid]['parsed'] = parse_size($max_upload_size);
+  if ($is_raw === TRUE) {
+	return  $limits[$element['#field_name']][$type][$account->uid]['raw'];
   }
-  $limits[$element['#field_name']][$account->uid][$raw_type] = $max_upload_size;
-  return $max_upload_size;
+  return $limits[$element['#field_name']][$type][$account->uid]['parsed'];
 }
 
 /**
@@ -223,15 +228,12 @@ function _filefield_role_limit_get_element_max_size($element, $account = NULL, $
  * @see _filefield_widget_settings_max_filesize_per_file_validate()
  */
 function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($element, &$form_state) {
-  if (empty($form_state['values']['max_filesize_per_file'])) {
+  if (empty($form_state['values'][$element['#name']]) === TRUE) {
     // Empty means no size restrictions, so don't throw an error.
     return;
   }
-  if (empty($form_state['values'][$element['#name']])) {
-    // Empty means no size restrictions, so don't throw an error.
-    return;
-  }
-  if (!is_numeric(parse_size($form_state['values'][$element['#name']]))) {
+  $max_size = parse_size($form_state['values'][$element['#name']]);
+  if (empty($max_size)===FALSE && is_numeric($max_size) === FALSE) {
     form_error($element, t('The "@field" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).', array('@field' => $element['#title'])));
   }
 }
@@ -247,15 +249,12 @@ function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($e
  * @see _filefield_widget_settings_max_filesize_per_node_validate()
  */
 function _filefield_role_limit_widget_settings_max_filesize_per_node_validate($element, &$form_state) {
-  if (empty($form_state['values']['max_filesize_per_node'])) {
+  if (empty($form_state['values'][$element['#name']]) === TRUE) {
     // Empty means no size restrictions, so don't throw an error.
     return;
   }
-  if (empty($form_state['values'][$element['#name']])) {
-    // Empty means no size restrictions, so don't throw an error.
-    return;
-  }
-  if (!is_numeric(parse_size($form_state['values'][$element['#name']]))) {
+  $max_size = parse_size($form_state['values'][$element['#name']]);
+  if (empty($max_size)===FALSE && is_numeric($max_size) === FALSE) {
     form_error($element, t('The "@field" option must contain a valid value. You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).', array('@field' => $element['#title'])));
   }
 }

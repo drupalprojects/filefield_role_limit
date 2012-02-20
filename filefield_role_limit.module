@@ -118,6 +118,7 @@ function filefield_role_limit_widget_process($element, $edit, &$form_state, $for
   if (isset($element['#upload_validators']['filefield_validate_size']) === TRUE) {
     $max_upload_size_plain = _filefield_role_limit_get_element_max_size($element);
     $element['#upload_validators']['filefield_validate_size'] = array($max_upload_size_plain);
+//	$element['#upload_validators']['filefield_role_limit_validate_size'] = array($max_size_file_plain);
     if (isset($element['upload']) === TRUE) {
       foreach ($element['#upload_validators'] as $callback => $arguments) {
         $help_func = $callback . '_help';
@@ -145,11 +146,14 @@ function filefield_role_limit_widget_process($element, $edit, &$form_state, $for
  *   The array of errors during validation process.
  */
 function filefield_role_limit_validate_size($file, $file_limit = 0, $user_limit = 0) {
-  $errors = array();
-  if ($file_limit && $file->filesize > $file_limit) {
-    $errors[] = t('The file is %filesize exceeding the maximum file size of %maxsize.', array('%filesize' => format_size($file->filesize), '%maxsize' => format_size($file_limit)));
-  }
-  return $errors;
+  return filefield_validate_size($file, $file_limit, $user_limit);
+}
+
+/**
+ * Automatic help text appended to fields that have file size validation.
+ */
+function filefield_role_limit_validate_help($size) {
+  return t('Maximum file size: %size', array('%size' => format_size(parse_size($size))));
 }
 
 /**

@@ -265,7 +265,7 @@ function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($e
     $err_message = array();
     $err_message[] = t('The "@field" option must contain a valid value.', array('@field' => $element['#title']));
     $err_message[] = t('You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).');
-    form_error($element, $err_message);
+    form_error($element, check_plain(implode(',', $err_message)));
   }
 }
 
@@ -289,6 +289,6 @@ function _filefield_role_limit_widget_settings_max_filesize_per_node_validate($e
     $err_message = array();
     $err_message[] = t('The "@field" option must contain a valid value.', array('@field' => $element['#title']));
     $err_message[] = t('You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).');
-    form_error($element, $err_message);
+    form_error($element, check_plain(implode(',', $err_message)));
   }
 }

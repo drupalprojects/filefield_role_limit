@@ -9,15 +9,17 @@
  * Implements hook_install().
  */
 function filefield_role_limit_install() {
+  // This module has to be weighter than FileField module to make sure
+  // hook_form_alter() is called when the form already contains FileField
+  // fields inside.
   $weight = db_result(db_query("SELECT weight FROM {system} WHERE type = 'module' AND name = 'filefield'"));
   db_query("UPDATE {system} SET weight = %d WHERE type = 'module' AND name = 'filefield_role_limit'", $weight + 1);
-  $message = st("The %name module installed successfully.",
-    array('%name' => st('FileField Role Limit')));
+  $message = st("The FileField Role Limit module installed successfully.");
   drupal_set_message($message);
   $message = st("FileField Role Limit settings are available for FileField fields under !nodetypeslink or !fieldslink.",
     array(
-      '!nodetypeslink' => l(st('Administer &gt; Content management &gt; Content types'), 'admin/content/types', array('html' => TRUE)),
-      '!fieldslink' => l(st('Administer &gt; Content management &gt; Content types &gt; Fields'), 'admin/content/types/fields', array('html' => TRUE))));
+      '!nodetypeslink' => l(st('Administer > Content management > Content types'), 'admin/content/types'),
+      '!fieldslink' => l(st('Administer > Content management > Content types > Fields'), 'admin/content/types/fields')));
   drupal_set_message($message);
 }
 

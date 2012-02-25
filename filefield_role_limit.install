@@ -17,8 +17,8 @@ function filefield_role_limit_install() {
   drupal_set_message(st("The FileField Role Limit module installed successfully."));
   drupal_set_message(st("FileField Role Limit settings are available for FileField fields under !nodetypeslink or !fieldslink.",
     array(
-      '!nodetypeslink' => l(st('Administer > Content management > Content types'), 'admin/content/types'),
-      '!fieldslink' => l(st('Administer > Content management > Content types > Fields'), 'admin/content/types/fields'))));
+      '!nodetypeslink' => filter_xss(l(st('Administer > Content management > Content types'), 'admin/content/types')),
+      '!fieldslink' => filter_xss(l(st('Administer > Content management > Content types > Fields'), 'admin/content/types/fields')))));
 }
 
 /**

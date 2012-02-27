@@ -201,7 +201,7 @@ function _filefield_role_limit_get_element_max_size($element, $account = NULL, $
       foreach ($roles as $rid) {
         if (isset($widgets['max_filesize_per_' . $type . '_role_' . $rid])
           && !empty($widgets['max_filesize_per_' . $type . '_role_' . $rid])
-          && parse_size($widgets['max_filesize_per_' . $type . '_role_' . $rid]) > $max_upload_size) {
+          && parse_size($widgets['max_filesize_per_' . $type . '_role_' . $rid]) > parse_size($max_upload_size)) {
           $max_upload_size = $widgets['max_filesize_per_' . $type . '_role_' . $rid];
         }
       }

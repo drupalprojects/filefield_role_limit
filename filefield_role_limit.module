@@ -63,13 +63,13 @@ function filefield_role_limit_widget_settings_alter(&$settings, $op, $widget) {
               '#type' => 'textfield',
               '#title' => t('Maximum upload size per file for role %role', array('%role' => $role)),
               '#default_value' => $widget['max_filesize_per_file_role_' . $rid],
-              '#element_validate' => array('_filefield_role_limit_widget_settings_max_filesize_per_file_validate'),
+              '#element_validate' => array('_filefield_role_limit_widget_settings_max_filesize_validate'),
             );
             $settings['max_filesize']['filefield_role_limit_node_per_role']['max_filesize_per_node_role_' . $rid] = array(
               '#type' => 'textfield',
               '#title' => t('Maximum upload size per node for role %role', array('%role' => $role)),
               '#default_value' => $widget['max_filesize_per_node_role_' . $rid],
-              '#element_validate' => array('_filefield_role_limit_widget_settings_max_filesize_per_node_validate'),
+              '#element_validate' => array('_filefield_role_limit_widget_settings_max_filesize_validate'),
             );
           }
         }
@@ -232,32 +232,9 @@ function _filefield_role_limit_get_element_max_size($element, $account = NULL, $
  *   the form_state of filefield widget settings' form.
  *
  * @see _filefield_widget_settings_max_filesize_per_file_validate()
- */
-function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($element, &$form_state) {
-  if (empty($form_state['values'][$element['#name']])) {
-    // Empty means no size restrictions, so don't throw an error.
-    return;
-  }
-  $max_size = parse_size($form_state['values'][$element['#name']]);
-  if (is_null($max_size) || !is_numeric($max_size)) {
-    $err_message = array();
-    $err_message[] = t('The "@field" option must contain a valid value.', array('@field' => $element['#title']));
-    $err_message[] = t('You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).');
-    form_error($element, implode(',', $err_message));
-  }
-}
-
-/**
- * Validation function for filefield widget settings.
- *
- * @param array $element
- *   the filefield field element.
- * @param array $form_state
- *   the form_state of filefield widget settings' form.
- *
  * @see _filefield_widget_settings_max_filesize_per_node_validate()
  */
-function _filefield_role_limit_widget_settings_max_filesize_per_node_validate($element, &$form_state) {
+function _filefield_role_limit_widget_settings_max_filesize_validate($element, &$form_state) {
   if (empty($form_state['values'][$element['#name']])) {
     // Empty means no size restrictions, so don't throw an error.
     return;
@@ -265,8 +242,8 @@ function _filefield_role_limit_widget_settings_max_filesize_per_node_validate($e
   $max_size = parse_size($form_state['values'][$element['#name']]);
   if (is_null($max_size) || !is_numeric($max_size)) {
     $err_message = array();
-    $err_message[] = t('The "@field" option must contain a valid value.', array('@field' => $element['#title']));
+    $err_message[] = t('The "!field" option must contain a valid value.', array('!field' => $element['#title']));
     $err_message[] = t('You can either leave the text field empty or enter a string like "512" (bytes), "80K" (kilobytes) or "50M" (megabytes).');
-    form_error($element, implode(',', $err_message));
+    form_error($element, filter_xss(implode(',', $err_message), array('em')));
   }
 }

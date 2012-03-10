@@ -1,6 +1,8 @@
 name = FileField Role Limit
 description = Defines FileField limits per role and node type.
-dependencies[] = filefield
-package = CCK
-core = 6.x
-php = 5.0
+dependencies[] = field
+dependencies[] = field_ui
+dependencies[] = file
+files[] = filefield_role_limit.module
+package = Form Elements
+core = 7.x

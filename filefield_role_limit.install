@@ -9,39 +9,30 @@
  * Implements hook_install().
  */
 function filefield_role_limit_install() {
-  // This module has to be weighter than FileField module to make sure
-  // hook_form_alter() is called when the form already contains FileField
-  // fields inside.
-  $weight = db_result(db_query("SELECT weight FROM {system} WHERE type = 'module' AND name = 'filefield'"));
-  db_query("UPDATE {system} SET weight = %d WHERE type = 'module' AND name = 'filefield_role_limit'", $weight + 1);
   drupal_set_message(st("The FileField Role Limit module installed successfully."));
   drupal_set_message(st("FileField Role Limit settings are available for FileField fields under !nodetypeslink or !fieldslink.",
     array(
-      '!nodetypeslink' => l(st('Administer > Content management > Content types'), 'admin/content/types'),
-      '!fieldslink' => l(st('Administer > Content management > Content types > Fields'), 'admin/content/types/fields'))));
+      '!nodetypeslink' => l(st('Administration > Structure > Content types'), 'admin/structure/types'),
+      '!fieldslink' => l(st('Administration > Reports > Field list'), 'admin/reports/fields'))));
 }
 
 /**
  * Implements hook_uninstall().
  */
 function filefield_role_limit_uninstall() {
-  $supported_widgets = array_keys(filefield_role_limit_elements());
-  $content_instance_table = content_instance_tablename();
-  $sql_args = $supported_widgets;
-  array_unshift($sql_args, $content_instance_table);
-  $db_result = db_query("SELECT * FROM {%s} WHERE widget_type IN (" . db_placeholders($supported_widgets, 'varchar') . ")", $sql_args);
-  while ($row = db_fetch_object($db_result)) {
-    $widget_settings = unserialize($row->widget_settings);
-    if (empty($widget_settings) === FALSE && is_array($widget_settings) === TRUE) {
-      foreach ($widget_settings as $name => $value) {
-        if (in_array(drupal_substr($name, 0, 27), array('max_filesize_per_file_role_', 'max_filesize_per_node_role_')) === TRUE) {
-          unset($widget_settings[$name]);
-        }
-      }
-      $row->widget_settings = $widget_settings;
-      $sql = "UPDATE {%s} SET widget_settings='%s' ";
-      $sql .= "WHERE field_name='%s' AND type_name='%s' AND widget_type='%s'";
-      db_query($sql, $content_instance_table, serialize($row->widget_settings), $row->field_name, $row->type_name, $row->widget_type);
+  $query = db_select('field_config', 'fc', array('fetch' => PDO::FETCH_ASSOC));
+  $query->join('field_config_instance', 'fci', 'fc.id = fci.field_id');
+  $query->fields('fci', array('field_id', 'data'));
+  $query->condition('type', array('file', 'image'), 'IN');
+  $results = $query->execute();
+  foreach ($results as $row) {
+    $data = unserialize($row['data']);
+    if (!empty($data) && isset($data['settings']['filefield_role_limit_file_per_role'])) {
+      unset($data['settings']['filefield_role_limit_file_per_role']);
+      $update = db_update('field_config_instance');
+      $update->fields(array('data' => serialize($data)));
+      $update->condition('field_id', $row['field_id']);
+      $update->execute();
     }
   }
 }

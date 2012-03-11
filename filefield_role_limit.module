@@ -247,4 +247,15 @@ function _filefield_role_limit_widget_settings_max_filesize_validate($element, &
     // Escape element[#title], leaving only <em> tags.
     form_error($element, $err_message);
   }
+  $max_upload_size = file_upload_max_size();
+  if ($max_size > $max_upload_size) {
+    $max_upload_size_formatted = format_size($max_upload_size);
+    $err_message = t('The !field option cannot contain a value bigger than system upload max file size (current limit <strong>%limit</strong>).',
+      array(
+        '!field' => filter_xss($element['#title'], array('em')),
+        '%limit' => $max_upload_size_formatted,
+      )
+    );
+    form_error($element, $err_message);
+  }
 }

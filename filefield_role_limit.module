@@ -54,9 +54,9 @@ function filefield_role_limit_form_field_ui_field_edit_form_alter(&$form, &$form
     if (!empty($roles)) {
       $current_maxsize = format_size(file_upload_max_size());
       $perfile_description = t('Specify the size limit that applies to each file separately for users for each role.');
-      $perfile_description = ' ' . t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size.');
-      $perfile_description = ' ' . t("If you leave this empty the file sizes will be limited only by PHP's maximum post and file upload sizes");
-      $perfile_description = ' ' . t('(current limit <strong>%limit</strong>).', array('%limit' => $current_maxsize));
+      $perfile_description .= ' ' . t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size.');
+      $perfile_description .= ' ' . t("If you leave this empty the file sizes will be limited only by PHP's maximum post and file upload sizes");
+      $perfile_description .= ' ' . t('(current limit <strong>%limit</strong>).', array('%limit' => $current_maxsize));
       $form['instance']['settings']['filefield_role_limit_file_per_role'] = array(
         '#type' => 'fieldset',
         '#title' => t('Maximum upload size per file per role'),
@@ -232,6 +232,17 @@ function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($e
   if (is_null($max_size) || !is_numeric($max_size) || $max_size <= 0) {
     $err_message = t('The "@field" option must contain a valid value.', array('@field' => field_filter_xss($element['#title'])));
     $err_message = ' ' . t('You can either leave the text field empty or enter a string like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes).');
+    form_error($element, $err_message);
+  }
+  $max_upload_size = file_upload_max_size();
+  if ($max_size > $max_upload_size) {
+    $max_upload_size_formatted = format_size($max_upload_size);
+    $err_message = t('The !field option cannot contain a value bigger than system upload max file size (current limit <strong>%limit</strong>).',
+      array(
+        '!field' => filter_xss($element['#title'], array('em')),
+        '%limit' => $max_upload_size_formatted,
+      )
+    );
     form_error($element, $err_message);
   }
 }

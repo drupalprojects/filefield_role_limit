@@ -136,7 +136,9 @@ function _filefield_role_limit_field_widget_file_form_alter(&$widget, $context) 
  *   The list of supported widgets.
  */
 function _filefield_role_limit_supported_widgets() {
-  return array('file_generic', 'image_image');
+  $types = array('file_generic', 'image_image');
+  drupal_alter('filefield_role_limit_supported_widgets', $types);
+  return $types;
 }
 
 /**

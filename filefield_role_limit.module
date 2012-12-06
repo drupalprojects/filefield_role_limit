@@ -5,7 +5,8 @@
  * FileField Role Limit: Configure upload max size limit per role.
  *
  * The FileField Role Limit module helps to configure different
- * FileField max upload size settings for each user role.
+ * FileField max upload size settings for each user role as well as
+ * file extension types per user.
  */
 
 /**
@@ -39,9 +40,9 @@ function filefield_role_limit_field_widget_image_image_form_alter(&$widget, $con
 /**
  * Implements hook_field_widget_WIDGET_TYPE_form_alter().
  */
-function filefield_role_limit_field_widget_file_generic_form_alter(&$widget, $context) {
-  // Altering 'file_generic' widget.
-  _filefield_role_limit_field_widget_file_form_alter($widget, $context);
+function filefield_role_limit_field_widget_file_generic_form_alter(&$element, &$form_state, $context) {
+// Altering 'file_generic' widget.
+  _filefield_role_limit_field_widget_file_form_alter($element, $form_state);
 }
 
 /**
@@ -57,24 +58,35 @@ function filefield_role_limit_form_field_ui_field_edit_form_alter(&$form, &$form
       $perfile_description .= ' ' . t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size.');
       $perfile_description .= ' ' . t("If you leave this empty the file sizes will be limited only by PHP's maximum post and file upload sizes");
       $perfile_description .= ' ' . t('(current limit <strong>%limit</strong>).', array('%limit' => $current_maxsize));
+      $perfile_description .= ' ' . t('Also specify the allowable filetype extensions: separate extensions with a space or comma and do not include the leading dot.');
       $form['instance']['settings']['filefield_role_limit_file_per_role'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Maximum upload size per file per role'),
+        '#title' => t('File upload restrictions per role'),
         '#description' => $perfile_description,
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
         '#weight' => $form['instance']['settings']['max_filesize']['#weight'] + 1,
       );
       foreach ($roles as $rid => $role) {
-        $default_value = '';
+        $default_max_value = '';
+        $default_type_value = '';
         if (isset($form['#instance']['settings']['filefield_role_limit_file_per_role']['max_filesize_per_file_role_' . $rid])) {
-          $default_value = $form['#instance']['settings']['filefield_role_limit_file_per_role']['max_filesize_per_file_role_' . $rid];
+          $default_max_value = $form['#instance']['settings']['filefield_role_limit_file_per_role']['max_filesize_per_file_role_' . $rid];
+        }
+        if (isset($form['#instance']['settings']['filefield_role_limit_file_per_role']['filetypes_per_file_role_' . $rid])) {
+          $default_type_value = $form['#instance']['settings']['filefield_role_limit_file_per_role']['filetypes_per_file_role_' . $rid];
         }
         $form['instance']['settings']['filefield_role_limit_file_per_role']['max_filesize_per_file_role_' . $rid] = array(
           '#type' => 'textfield',
           '#title' => t('Maximum upload size per file for role %role', array('%role' => $role)),
-          '#default_value' => $default_value,
+          '#default_value' => $default_max_value,
           '#element_validate' => array('_filefield_role_limit_widget_settings_max_filesize_per_file_validate'),
+        );
+        $form['instance']['settings']['filefield_role_limit_file_per_role']['filetypes_per_file_role_' . $rid] = array(
+          '#type' => 'textfield',
+          '#title' => t('Allowed file extensions for role %role', array('%role' => $role)),
+          '#default_value' => $default_type_value,
+          '#element_validate' => array('_file_generic_settings_extensions'),
         );
       }
     }
@@ -84,9 +96,11 @@ function filefield_role_limit_form_field_ui_field_edit_form_alter(&$form, &$form
 /**
  * Element process callback for file-based fields.
  *
- * Adds a role-specific max size upload limit to the current file-based field.
+ * Adds a role-specific max size upload limit to the current file-based field
+ * as well as file extension types per user.
  */
 function filefield_role_limit_file_field_process(&$element, &$form_state, $form) {
+
   if (isset($element['#field_name'])) {
     $max_upload_size_plain = 0;
     if (isset($element['#language']) && isset($form_state['field'][$element['#field_name']][$element['#language']])) {
@@ -98,14 +112,25 @@ function filefield_role_limit_file_field_process(&$element, &$form_state, $form)
     if ($max_upload_size_plain > 0) {
       $element['#upload_validators']['file_validate_size'][0] = $max_upload_size_plain;
     }
+    $type_upload = '';
+    if (isset($element['#language']) && isset($form_state['field'][$element['#field_name']][$element['#language']])) {
+      $type_upload = _filefield_role_limit_get_element_type($form_state['field'][$element['#field_name']][$element['#language']]);
+    }
+    elseif (isset($form_state['field'][$element['#field_name']]['und'])) {
+      $type_upload = _filefield_role_limit_get_element_type($form_state['field'][$element['#field_name']]['und']);
+    }
+    if ($type_upload <> '') {
+      $element['#upload_validators']['file_validate_type'][0] = $type_upload;
+    }
   }
   return $element;
 }
 
 /**
- * Alter file-based widgets to modify element max upload size and description.
+ * Alter file-based widgets to modify element max upload size and description
+ * as well as for allowable file types per role.
  */
-function _filefield_role_limit_field_widget_file_form_alter(&$widget, $context) {
+function _filefield_role_limit_field_widget_file_form_alter(&$widget, &$context) {
   $firstkey = NULL;
   foreach (element_children($widget) as $key) {
     if (is_null($firstkey)) {
@@ -121,6 +146,17 @@ function _filefield_role_limit_field_widget_file_form_alter(&$widget, $context) 
     }
     if ($max_upload_size_plain > 0) {
       $widget[$key]['#upload_validators']['file_validate_size'][0] = $max_upload_size_plain;
+      $widget[$key]['#description'] = theme('file_upload_help', array('description' => '', 'upload_validators' => $widget[$key]['#upload_validators']));
+    }
+    $type_upload = '';
+    if (isset($element['#language']) && isset($context['field'][$element['#field_name']][$element['#language']])) {
+      $type_upload = _filefield_role_limit_get_element_type($context['field'][$element['#field_name']][$element['#language']]);
+    }
+    elseif (isset($context['field'][$element['#field_name']]['und'])) {
+      $type_upload = _filefield_role_limit_get_element_type($context['field'][$element['#field_name']]['und']);
+    }
+    if ($type_upload != '') {
+      $widget[$key]['#upload_validators']['file_validate_extensions'][0] = $type_upload;
       $widget[$key]['#description'] = theme('file_upload_help', array('description' => '', 'upload_validators' => $widget[$key]['#upload_validators']));
     }
   }
@@ -198,13 +234,13 @@ function _filefield_role_limit_get_element_max_size($instance, $account = NULL, 
         if (isset($widgets['max_filesize_per_' . $type . '_role_' . $rid])
           && !empty($widgets['max_filesize_per_' . $type . '_role_' . $rid])
           && parse_size($widgets['max_filesize_per_' . $type . '_role_' . $rid]) > parse_size($max_upload_size)) {
-          $max_upload_size = $widgets['max_filesize_per_' . $type . '_role_' . $rid];
+          $max_upload_size = check_plain($widgets['max_filesize_per_' . $type . '_role_' . $rid]);
         }
       }
     }
     // Default settings value.
     if ($max_upload_size == 0 && !empty($instance['instance']['settings']['max_filesize'])) {
-      $max_upload_size = $instance['instance']['settings']['max_filesize'];
+      $max_upload_size = check_plain($instance['instance']['settings']['max_filesize']);
     }
     // Default system value.
     if ($max_upload_size == 0) {
@@ -219,6 +255,67 @@ function _filefield_role_limit_get_element_max_size($instance, $account = NULL, 
   return $limits[$instance['instance']['field_name']][$type][$account->uid]['parsed'];
 }
 
+/**
+ * Get the allowable file type string for a specified or current user.
+ *
+ * Each user role could have a different allowable file type.
+ * If user has a blank entry for allowable file type for a role,
+ * then the default it used.
+ * 
+ * @param array $instance
+ *   A field element instance as array.
+ * @param object|null $account
+ *   (optional) The user to be checked.
+ *   If no user is provided, the current user will be used.
+ * @param string $type
+ *   (optional) The type of limit (possible values: 'file', 'node').
+ *
+ * @return string
+ *   The allowable file upload types for the user.
+ */
+function _filefield_role_limit_get_element_type($instance, $account = NULL, $type = 'file') {
+  static $limits;
+  if (is_null($account)) {
+    global $user;
+    $account = $user;
+  }
+  if (!is_array($limits)) {
+    $limits = array();
+  }
+  if (!isset($limits[$instance['instance']['field_name']])) {
+    $limits[$instance['instance']['field_name']] = array();
+  }
+  if (!isset($limits[$instance['instance']['field_name']][$type])) {
+    $limits[$instance['instance']['field_name']][$type] = array();
+  }
+  $raw_type = 'parsed';
+  if (isset($limits[$instance['instance']['field_name']][$type][$account->uid][$raw_type])
+    && !empty($limits[$instance['instance']['field_name']][$type][$account->uid][$raw_type])) {
+    return $limits[$instance['instance']['field_name']][$type][$account->uid][$raw_type];
+  }
+  $allowed_file_types = '';
+  $roles = array();
+  if (!empty($account->roles)) {
+    $roles = array_keys($account->roles);
+  }
+  if (isset($instance['instance']['settings']['filefield_role_limit_file_per_role'])) {
+    $widgets = $instance['instance']['settings']['filefield_role_limit_file_per_role'];
+    if (!empty($roles)) {
+      foreach ($roles as $rid) {
+        if (isset($widgets['filetypes_per_' . $type . '_role_' . $rid])
+          && !empty($widgets['filetypes_per_' . $type . '_role_' . $rid])) {
+          $allowed_file_types = check_plain($widgets['filetypes_per_' . $type . '_role_' . $rid]);
+        }
+      }
+    }
+    // Default settings value.
+    if ($allowed_file_types == '' && !empty($instance['instance']['settings']['file_extensions'])) {
+      $allowed_file_types = check_plain($instance['instance']['settings']['file_extensions']);
+    }
+  }
+  $limits[$instance['instance']['field_name']][$type][$account->uid]['type'] = $allowed_file_types;
+  return $limits[$instance['instance']['field_name']][$type][$account->uid]['type'];
+}
 
 /**
  * Element validate callback for the maximum upload size field for user role.
@@ -230,7 +327,7 @@ function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($e
     // Empty means no size restrictions, so don't throw an error.
     return;
   }
-  $max_size = parse_size($element['#value']);
+  $max_size = parse_size(check_plain($element['#value']));
   if (is_null($max_size) || !is_numeric($max_size) || $max_size <= 0) {
     $err_message = t('The "@field" option must contain a valid value.', array('@field' => field_filter_xss($element['#title'])));
     $err_message = ' ' . t('You can either leave the text field empty or enter a string like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes).');

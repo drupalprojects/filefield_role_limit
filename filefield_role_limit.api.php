@@ -8,7 +8,7 @@
  */
 
 /**
- * @defgroup filefield_role_limit_hooks Filefield Role Limit' hooks
+ * @defgroup filefield_role_limit_hooks Filefield Role Limit's hooks
  * @{
  * Hooks that can be implemented by other modules in order to extend Filefield
  * Role Limit module functionalities.

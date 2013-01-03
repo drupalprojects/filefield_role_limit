@@ -120,7 +120,7 @@ function filefield_role_limit_file_field_process(&$element, &$form_state, $form)
       $type_upload = _filefield_role_limit_get_element_type($form_state['field'][$element['#field_name']]['und']);
     }
     if ($type_upload <> '') {
-      $element['#upload_validators']['file_validate_type'][0] = $type_upload;
+      $element['#upload_validators']['file_validate_extensions'][0] = $type_upload;
     }
   }
   return $element;

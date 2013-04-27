@@ -330,7 +330,7 @@ function _filefield_role_limit_widget_settings_max_filesize_per_file_validate($e
   $max_size = parse_size(check_plain($element['#value']));
   if (is_null($max_size) || !is_numeric($max_size) || $max_size <= 0) {
     $err_message = t('The "@field" option must contain a valid value.', array('@field' => field_filter_xss($element['#title'])));
-    $err_message = ' ' . t('You can either leave the text field empty or enter a string like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes).');
+    $err_message .= ' ' . t('You can either leave the text field empty or enter a string like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes).');
     form_error($element, $err_message);
   }
   $max_upload_size = file_upload_max_size();

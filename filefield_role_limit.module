@@ -46,6 +46,17 @@ function filefield_role_limit_field_widget_file_generic_form_alter(&$element, &$
 }
 
 /**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function filefield_role_limit_field_widget_media_generic_form_alter(&$element, &$form_state, $context) {
+  // Altering 'media_generic' widget.
+  $max_upload_size_plain = _filefield_role_limit_get_element_max_size($context, NULL, 'file', TRUE);
+  $type_upload = _filefield_role_limit_get_element_type($context);
+  $element['#media_options']['global']['max_filesize'] = $max_upload_size_plain;
+  $element['#media_options']['global']['file_extensions'] = $type_upload;
+}
+
+/**
  * Implements hook_form_BASE_FORM_ID_alter() for field_ui_field_edit_form().
  */
 function filefield_role_limit_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
@@ -172,7 +183,7 @@ function _filefield_role_limit_field_widget_file_form_alter(&$widget, &$context)
  *   The list of supported widgets.
  */
 function _filefield_role_limit_supported_widgets() {
-  $types = array('file_generic', 'image_image');
+  $types = array('file_generic', 'image_image', 'media_generic');
   drupal_alter('filefield_role_limit_supported_widgets', $types);
   return $types;
 }

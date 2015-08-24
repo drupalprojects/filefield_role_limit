@@ -52,8 +52,8 @@ function filefield_role_limit_field_widget_media_generic_form_alter(&$element, &
   // Altering 'media_generic' widget.
   $max_upload_size_plain = _filefield_role_limit_get_element_max_size($context, NULL, 'file', TRUE);
   $type_upload = _filefield_role_limit_get_element_type($context);
-  $element[0]['#media_options']['global']['max_filesize'] = $max_upload_size_plain;
-  $element[0]['#media_options']['global']['file_extensions'] = $type_upload;
+  $element['#media_options']['global']['max_filesize'] = $max_upload_size_plain;
+  $element['#media_options']['global']['file_extensions'] = $type_upload;
 }
 
 /**

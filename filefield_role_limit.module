@@ -52,8 +52,8 @@ function filefield_role_limit_field_widget_media_generic_form_alter(&$element, &
   // Altering 'media_generic' widget.
   $max_upload_size_plain = _filefield_role_limit_get_element_max_size($context, NULL, 'file', TRUE);
   $type_upload = _filefield_role_limit_get_element_type($context);
-  $element['#media_options']['global']['max_filesize'] = $max_upload_size_plain;
-  $element['#media_options']['global']['file_extensions'] = $type_upload;
+  $element[0]['#media_options']['global']['max_filesize'] = $max_upload_size_plain;
+  $element[0]['#media_options']['global']['file_extensions'] = $type_upload;
 }
 
 /**
@@ -70,13 +70,17 @@ function filefield_role_limit_form_field_ui_field_edit_form_alter(&$form, &$form
       $perfile_description .= ' ' . t("If you leave this empty the file sizes will be limited only by PHP's maximum post and file upload sizes");
       $perfile_description .= ' ' . t('(current limit <strong>%limit</strong>).', array('%limit' => $current_maxsize));
       $perfile_description .= ' ' . t('Also specify the allowable filetype extensions: separate extensions with a space or comma and do not include the leading dot.');
+      $max_filesize_weight = 0;
+      if(isset($form['instance']['settings']['max_filesize']['#weight'])){
+        $max_filesize_weight = $form['instance']['settings']['max_filesize']['#weight'];
+      }
       $form['instance']['settings']['filefield_role_limit_file_per_role'] = array(
         '#type' => 'fieldset',
         '#title' => t('File upload restrictions per role'),
         '#description' => $perfile_description,
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
-        '#weight' => $form['instance']['settings']['max_filesize']['#weight'] + 1,
+        '#weight' => $max_filesize_weight + 1,
       );
       foreach ($roles as $rid => $role) {
         $default_max_value = '';
